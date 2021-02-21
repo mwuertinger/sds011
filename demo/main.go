@@ -16,28 +16,13 @@ func main() {
 	}
 	defer s.Close()
 
-	var buf [10]byte
 	for {
-		// search for message header
-		for {
-			_, err := s.Read(buf[0:1])
-			if err != nil {
-				log.Printf("read: %v", err)
-				continue
-			}
-			if buf[0] == 0xAA {
-				break
-			}
+		msg, err := sds011.ReadMessage(s)
+		if err == io.EOF {
+			log.Fatalf("%v", err)
 		}
-
-		_, err = io.ReadFull(s, buf[1:])
 		if err != nil {
-			log.Printf("read: %v", err)
-			continue
-		}
-		msg, err := sds011.ParseMessage(buf)
-		if err != nil {
-			log.Printf("parse: %v", err)
+			log.Printf("%v", err)
 			continue
 		}
 		log.Printf("message: pm2.5=%.1f pm10=%.1f", msg.PM25, msg.PM10)

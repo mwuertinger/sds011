@@ -3,6 +3,7 @@ package sds011
 import (
 	"errors"
 	"fmt"
+	"io"
 )
 
 type Message struct {
@@ -12,7 +13,29 @@ type Message struct {
 	ID        uint16
 }
 
-func ParseMessage(buf [10]byte) (*Message, error) {
+func ReadMessage(r io.Reader) (*Message, error) {
+	var buf [10]byte
+	// search for message header
+	// all messages start with 0xAA
+	for {
+		_, err := r.Read(buf[0:1])
+		if err != nil {
+			return nil, err
+		}
+		if buf[0] == 0xAA {
+			break
+		}
+	}
+
+	_, err := io.ReadFull(r, buf[1:])
+	if err != nil {
+		return nil, err
+	}
+
+	return parseMessage(buf)
+}
+
+func parseMessage(buf [10]byte) (*Message, error) {
 	if buf[0] != 0xAA {
 		return nil, fmt.Errorf("invalid message header: %x", buf[0])
 	}
