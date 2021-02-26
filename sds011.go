@@ -1,7 +1,6 @@
 package sds011
 
 import (
-	"errors"
 	"fmt"
 	"io"
 )
@@ -48,7 +47,7 @@ func parseMessage(buf [10]byte) (*Message, error) {
 		checksum += b
 	}
 	if checksum != buf[8] {
-		return nil, errors.New("checksum mismatch")
+		return nil, fmt.Errorf("checksum mismatch: expected=%02x, calculated=%02x", buf[8], checksum)
 	}
 
 	var pm25, pm10 uint16
@@ -72,20 +71,19 @@ func SetWorkingPeriod(w io.Writer, minutes uint8) error {
 	cmd[0] = 8
 	cmd[1] = 1
 	cmd[2] = minutes
-	_, err := w.Write(cmd[:])
-	return err
+	// send to all device IDs
+	cmd[13] = 0xFF
+	cmd[14] = 0xFF
+	return sendCommand(w, cmd)
 }
 
-func sendCommand(w io.Writer, cmd [15]byte, deviceId uint16) error {
+func sendCommand(w io.Writer, cmd [15]byte) error {
 	var buf [19]byte
 	buf[0] = 0xAA
 	buf[1] = 0xB4
 	for i := 0; i < 15; i++ {
 		buf[i+2] = cmd[i]
 	}
-	// send to all device IDs
-	buf[15] = 0xFF
-	buf[16] = 0xFF
 	// calculate checksum
 	for _, b := range cmd {
 		buf[17] += b
