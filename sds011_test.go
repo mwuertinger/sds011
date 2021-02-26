@@ -7,6 +7,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestReadMessage(t *testing.T) {
+	data := []struct {
+		msg      [10]byte
+		expected *Message
+	}{
+		{
+			[10]byte{0xAA, 0xC0, 0xD4, 0x04, 0x3A, 0x0A, 0xA1, 0x60, 0x1D, 0xAB},
+			&Message{
+				Command: 0xC0,
+				PM25:    123.6,
+				PM10:    261.8,
+				ID:      0x60A1,
+			},
+		},
+	}
+
+	for _, d := range data {
+		out, _ := ReadMessage(bytes.NewReader(d.msg[:]))
+		assert.Equal(t, d.expected, out)
+	}
+}
+
 func TestSendCommand(t *testing.T) {
 	data := []struct {
 		cmd         [15]byte
